@@ -1,0 +1,79 @@
+`timescale 1ns / 1ps
+
+
+
+module alaram_clock_fsm_t;
+
+  
+  reg clk;
+  reg rst;
+  reg alarm_enable;
+  reg snooze;
+  reg [7:0] alarm_time;
+  reg [7:0] current_time;
+
+  wire alarm_ring;
+
+ 
+  alram_clock_fsm dut (
+    .clk(clk),
+    .rst(rst),
+    .alarm_enable(alarm_enable),
+    .snooze(snooze),
+    .alarm_time(alarm_time),
+    .current_time(current_time),
+    .alarm_ring(alarm_ring)
+  );
+
+  // Clock generator: 10ns period
+  always #5 clk = ~clk;
+
+  
+  initial begin
+    
+    clk = 0;
+    rst = 1;
+    alarm_enable = 0;
+    snooze = 0;
+    alarm_time = 8'b00000100;      // Set alarm at 4
+    current_time = 8'b00000000;    // Start at 0
+    #20;
+
+    // Release reset and enable alarm
+    rst = 0;
+    alarm_enable = 1;
+
+    // Wait and increment time until alarm_time
+    repeat (4) begin
+      #20;
+      current_time = current_time + 1;
+    end
+
+    // Now alarm should ring (current_time == alarm_time)
+    #20;
+
+    // Press snooze after 2 cycles of alarm ringing
+    #20;
+    snooze = 1;
+    #10;
+    snooze = 0;
+
+    // Wait for snooze to expire (5 cycles in FSM = 50 ns)
+    #60;
+
+    // Alarm should ring again
+    #20;
+
+    // Now press reset
+    rst = 1;
+    #20;
+    rst = 0;
+
+    // Alarm should be off now
+    #20;
+
+    $finish;
+  end
+
+
+endmodule
